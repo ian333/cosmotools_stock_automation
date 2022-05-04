@@ -22,6 +22,7 @@ app=FastAPI()
 
 #URL's
 URL_MELI='https://api.mercadolibre.com/oauth/token' 
+URL_MELI_SERVER='https://auth.mercadolibre.com.mx/authorization'
 
 #curl -X POST \
 #-H 'accept: application/json' \
@@ -76,12 +77,22 @@ def code_to_token():
         'client_id':config('CLIENT_ID'),
         'client_secret':config('CLIENT_SECRET'),
         'code':config('SERVER_CODE'),
-        'redirect_uri':config('REDIRECT_URI',cast=str)
+        'redirect_uri':config('REDIRECT_URI')
     }
+
     r=httpx.post("https://api.mercadolibre.com/oauth/token",headers=headers,data=data)
     with open('responses.json','w',encoding="UTF-8") as f:
         f.write(str(r.text))
     return r.text
+
+@app.get("")
+def get_code_server():
+    params={
+        "response_type":"code",
+        "client_id":config('CLIENT_ID'),
+        "redirect_uri":config('REDIRECT_URI')
+    }
+    req=httpx.post(URL_MELI_SERVER,params=params)
 
 ##Home
 @app.get(
