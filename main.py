@@ -2,15 +2,14 @@
 
 
 #Python Decouple
-from http import client
 import json
 from typing import Optional
 from decouple import config
 
 #Fastapi & Pydantic
 
-from fastapi import APIRouter, Body, FastAPI,status
-from pydantic import BaseModel, Field, HttpUrl
+from fastapi import  Body, FastAPI,status
+from pydantic import BaseModel, HttpUrl
 
 #HTTPX
 import httpx
@@ -59,9 +58,10 @@ headers={
 #Mercado Libre
 
 @app.post(
-    path="/code_to_token"
+    path="/code_to_token",
+    tags=["Login"]
 )
-def code_to_token():
+async def code_to_token():
     data={
         'grant_type':'authorization_code',
         'client_id':config('CLIENT_ID'),
@@ -73,10 +73,11 @@ def code_to_token():
     r=httpx.post("https://api.mercadolibre.com/oauth/token",headers=headers,data=data)
     with open('responses.json','w',encoding="UTF-8") as f:
         f.write(str(r.text))
-    return r.text
+    return r.json()
 
 @app.post(
-    path="/refresh_token"
+    path="/refresh_token",
+    tags=["Login"]
 )
 def refresh_token():
     with open ('responses.json','r+',encoding='UTF-8') as f:
@@ -94,31 +95,14 @@ def refresh_token():
         f.write(json.dumps(response))
     return response           
     
-
-    
-
-
-    """curl -X POST \
--H 'accept: application/json' \
--H 'content-type: application/x-www-form-urlencoded' \
-'https://api.mercadolibre.com/oauth/token' \
--d 'grant_type=refresh_token' \
--d 'client_id=$APP_ID' \
--d 'client_secret=$SECRET_KEY' \
--d 'refresh_token=$REFRESH_TOKEN'"""
-
- 
-
-
-
-@app.get("")
+@app.get("/get_code")
 def get_code_server():
     params={
         "response_type":"code",
         "client_id":config('CLIENT_ID'),
         "redirect_uri":config('REDIRECT_URI')
     }
-    req=httpx.post(URL_MELI_SERVER,params=params)
+    req=httpx.get(URL_MELI_SERVER,params=params)
 
 ##Home
 @app.get(
@@ -131,8 +115,28 @@ def home():
 
 
 @app.post(
-   "/holi"
+   "/hola"
     )
 def code_for_token(token:ServerGeneratedCode = Body(...)):
     pass
 
+@app.post(
+    "/test_user",
+    tags=["Test User"]
+)
+def test_user():
+    with open ('responses.json','r',encoding='UTF-8') as f:
+            info = json.load(f)
+            headers ={
+                'Authorization': f'Bearer {info["access_token"]}',
+                'content-type':'application/json'
+            }
+            data="{'site_id':'MLM'}"
+            r = httpx.post('https://api.mercadolibre.com/users/test_user',headers=headers,data=data)
+    with open("user.json","r+",encoding='UTF-8') as f:
+        results=json.loads(f.read())
+        results.append(r.json())
+        f.seek(0)
+        f.write(json.dumps(results))
+
+    return r.json()
