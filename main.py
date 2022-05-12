@@ -1,6 +1,3 @@
-
-
-
 #Python Decouple
 import json
 from typing import Optional
